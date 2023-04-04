@@ -49,7 +49,7 @@ type PackageEvent struct {
 	ID        uint64      // `db:"package_event_id"`
 	PackageID uint64      // `db:"package_id"`
 	Type      EventType   // `db:"event_type"`
-	Status    EventStatus // `db:"event_status"` // Это даже нигде не используется, кроме как внутри базы
+	Status    EventStatus `json:"-"` // `db:"event_status"` // Это даже нигде не используется, кроме как внутри базы
 	Created   time.Time   // `db:"created_at"`
 	Payload   Payload     // `db:"payload"`
 }

@@ -51,25 +51,25 @@ func NewKafkaConsumer(cfg config.Kafka) (*KafkaConsumer, error) {
 	saramaConf := sarama.NewConfig()
 	saramaConf.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategyRoundRobin
 	saramaConf.Consumer.Offsets.Initial = sarama.OffsetOldest
-	log.Info().Msg("NewKafkaConsumer(): sarama config ready")
+	log.Debug().Msg("NewKafkaConsumer(): sarama config ready")
 
 	cg, err := sarama.NewConsumerGroup(cfg.Brokers, cfg.GroupID, saramaConf)
 	if err != nil {
 		return nil, err
 	}
-	log.Info().Msg("NewKafkaConsumer(): consumerGroup created")
+	log.Debug().Msg("NewKafkaConsumer(): consumerGroup created")
 
 	consumerHandler := &consumerHandler{
 		output: make(chan []byte, cfg.Capacity),
 	}
-	log.Info().Msg("NewKafkaConsumer(): consumerGroup created")
+	log.Debug().Msg("NewKafkaConsumer(): consumerGroup created")
 
 	kc := &KafkaConsumer{
 		consumerGroup:   cg,
 		topic:           cfg.Topic,
 		consumerHandler: consumerHandler,
 	}
-	log.Info().Msg("NewKafkaConsumer(): consumer created")
+	log.Debug().Msg("NewKafkaConsumer(): consumer created")
 
 	return kc, nil
 }
