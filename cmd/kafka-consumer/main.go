@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
@@ -19,22 +20,30 @@ func main() {
 		return
 	}
 	log.Info().Msg("config read")
+	cfg := config.GetConfigInstance()
 
-	kc, err := kafka.NewKafkaConsumer(config.GetConfigInstance())
+	pbChannel := make(chan []byte, cfg.Capacity)
+	jsonChannel := make(chan []byte, cfg.Capacity)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	kc, err := kafka.NewKafkaConsumer(cfg, pbChannel, jsonChannel)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to create kafka consumer")
 		return
 	}
 	log.Info().Msg("kafka consumer created")
 
-	if err := kc.Start(); err != nil {
+	if err := kc.Start(ctx); err != nil {
 		log.Error().Err(err).Msg("failed to start kafka consumer")
 		return
 	}
-	log.Info().Msg("kafka consumer run")
+	log.Info().Msg("kafka consumer started")
 
-	w := mw.NewWriter(kc.GetChannel())
-	w.Start()
+	pbw := mw.NewPbWriter(pbChannel)
+	pbw.Start(ctx)
+	jw := mw.NewJsonWriter(jsonChannel)
+	jw.Start(ctx)
 	log.Info().Msg("writer started")
 
 	interrupt := make(chan os.Signal, 1)
@@ -42,5 +51,6 @@ func main() {
 	log.Info().Msg("main gorutine waiting for interrupt signal")
 
 	<-interrupt
+	cancel()
 	log.Info().Msg("main gorutine recived interrupt signal")
 }

@@ -1,6 +1,8 @@
 capacity: 512
-topic: "omp-package-events"
 groupId: "logistic-package-api"
 brokers:
   # - "kafka:9092"
   - "localhost:9094"
+topics:
+  - "omp-package-events"
+  - "omp-tgbot-commands"

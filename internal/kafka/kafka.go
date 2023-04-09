@@ -9,7 +9,8 @@ import (
 )
 
 type consumerHandler struct {
-	output chan []byte
+	packageEventsOutput chan<- []byte
+	tgbotCommandsOutput chan<- []byte
 }
 
 // Cleanup implements sarama.ConsumerGroupHandler
@@ -20,10 +21,16 @@ func (*consumerHandler) Cleanup(sarama.ConsumerGroupSession) error {
 // ConsumeClaim implements sarama.ConsumerGroupHandler
 func (ch *consumerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for message := range claim.Messages() {
-		log.Debug().Msgf("consumerHandler.ConsumeClaim: message with offset %d recived", message.Offset)
+		log.Debug().Msgf(`consumerHandler.ConsumeClaim: message from topic "%s" with offset %d recived`, message.Topic, message.Offset)
 		session.MarkMessage(message, "")
 
-		ch.output <- message.Value
+		switch message.Topic {
+		case "omp-package-events":
+			ch.packageEventsOutput <- message.Value
+
+		case "omp-tgbot-commands":
+			ch.tgbotCommandsOutput <- message.Value
+		}
 	}
 
 	return nil
@@ -38,15 +45,15 @@ var _ sarama.ConsumerGroupHandler = &consumerHandler{}
 
 type KafkaConsumer struct {
 	consumerGroup   sarama.ConsumerGroup
-	topic           string
+	topics          []string
 	consumerHandler *consumerHandler
 }
 
-func (kc *KafkaConsumer) GetChannel() <-chan []byte {
-	return kc.consumerHandler.output
-}
+// func (kc *KafkaConsumer) GetChannel() <-chan []byte {
+// 	return kc.consumerHandler.output
+// }
 
-func NewKafkaConsumer(cfg config.Kafka) (*KafkaConsumer, error) {
+func NewKafkaConsumer(cfg config.Kafka, packageEventsCh chan<- []byte, tgbotCommandsCh chan<- []byte) (*KafkaConsumer, error) {
 
 	saramaConf := sarama.NewConfig()
 	saramaConf.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategyRoundRobin
@@ -60,13 +67,13 @@ func NewKafkaConsumer(cfg config.Kafka) (*KafkaConsumer, error) {
 	log.Debug().Msg("NewKafkaConsumer(): consumerGroup created")
 
 	consumerHandler := &consumerHandler{
-		output: make(chan []byte, cfg.Capacity),
+		packageEventsOutput: packageEventsCh,
+		tgbotCommandsOutput: tgbotCommandsCh,
 	}
-	log.Debug().Msg("NewKafkaConsumer(): consumerGroup created")
 
 	kc := &KafkaConsumer{
 		consumerGroup:   cg,
-		topic:           cfg.Topic,
+		topics:          cfg.Topics,
 		consumerHandler: consumerHandler,
 	}
 	log.Debug().Msg("NewKafkaConsumer(): consumer created")
@@ -74,8 +81,8 @@ func NewKafkaConsumer(cfg config.Kafka) (*KafkaConsumer, error) {
 	return kc, nil
 }
 
-func (kc *KafkaConsumer) Start() error {
-	ctx := context.Background()
+func (kc *KafkaConsumer) Start(ctx context.Context) error {
+	// ctx := context.Background()
 	err := kc.subscribe(ctx)
 
 	return err
@@ -83,11 +90,11 @@ func (kc *KafkaConsumer) Start() error {
 
 func (kc *KafkaConsumer) subscribe(ctx context.Context) error {
 	go func() {
-		for {
-			if err := kc.consumerGroup.Consume(ctx, []string{kc.topic}, kc.consumerHandler); err != nil {
-				log.Error().Err(err).Msg("kc.consumerGroup.Consume")
-			}
+		// for {
+		if err := kc.consumerGroup.Consume(ctx, kc.topics, kc.consumerHandler); err != nil {
+			log.Error().Err(err).Msg("kc.consumerGroup.Consume")
 		}
+		// }
 	}()
 	return nil
 }

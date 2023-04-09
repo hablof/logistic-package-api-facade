@@ -19,8 +19,8 @@ func GetConfigInstance() Kafka {
 
 type Kafka struct {
 	Capacity uint64   `yaml:"capacity"`
-	Topic    string   `yaml:"topic"`
 	GroupID  string   `yaml:"groupId"`
+	Topics   []string `yaml:"topics"`
 	Brokers  []string `yaml:"brokers"`
 }
 
