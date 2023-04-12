@@ -9,8 +9,8 @@ import (
 )
 
 type consumerHandler struct {
-	packageEventsOutput chan<- []byte
-	tgbotCommandsOutput chan<- []byte
+	databaseEventsOutput chan<- []byte
+	tgbotEventsOutput    chan<- []byte
 }
 
 // Cleanup implements sarama.ConsumerGroupHandler
@@ -24,12 +24,16 @@ func (ch *consumerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, cla
 		log.Debug().Msgf(`consumerHandler.ConsumeClaim: message from topic "%s" with offset %d recived`, message.Topic, message.Offset)
 		session.MarkMessage(message, "")
 
+		// shitty hardcode
 		switch message.Topic {
 		case "omp-package-events":
-			ch.packageEventsOutput <- message.Value
+			ch.databaseEventsOutput <- message.Value
 
 		case "omp-tgbot-commands":
-			ch.tgbotCommandsOutput <- message.Value
+			ch.tgbotEventsOutput <- message.Value
+
+		case "omp-tgbot-cache-events":
+			ch.tgbotEventsOutput <- message.Value
 		}
 	}
 
@@ -67,8 +71,8 @@ func NewKafkaConsumer(cfg config.Kafka, packageEventsCh chan<- []byte, tgbotComm
 	log.Debug().Msg("NewKafkaConsumer(): consumerGroup created")
 
 	consumerHandler := &consumerHandler{
-		packageEventsOutput: packageEventsCh,
-		tgbotCommandsOutput: tgbotCommandsCh,
+		databaseEventsOutput: packageEventsCh,
+		tgbotEventsOutput:    tgbotCommandsCh,
 	}
 
 	kc := &KafkaConsumer{

@@ -6,3 +6,4 @@ brokers:
 topics:
   - "omp-package-events"
   - "omp-tgbot-commands"
+  - "omp-tgbot-cache-events"

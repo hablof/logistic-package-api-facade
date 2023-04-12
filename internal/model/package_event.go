@@ -7,6 +7,13 @@ import (
 
 type EventType uint8
 
+const (
+	_ EventType = iota
+	Created
+	Updated
+	Removed
+)
+
 func (e EventType) MarshalJSON() ([]byte, error) {
 	var s string
 	switch e {
@@ -31,13 +38,6 @@ func (p Payload) MarshalJSON() ([]byte, error) {
 	}
 	return []byte(p), nil
 }
-
-const (
-	_ EventType = iota
-	Created
-	Updated
-	Removed
-)
 
 const (
 	_ EventStatus = iota
