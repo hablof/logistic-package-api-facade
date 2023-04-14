@@ -2,7 +2,7 @@
 
 ## logistic-package-api-facade
 
-Сервис выполняет простейшую функцию: читает сообчения в кафка-топиках   
+Сервис выполняет простейшую функцию: читает сообщения в кафка-топиках   
   - "omp-package-events"
   - "omp-tgbot-commands"
   - "omp-tgbot-cache-events"
