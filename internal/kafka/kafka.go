@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/hablof/logistic-package-api-facade/internal/config"
@@ -64,10 +65,24 @@ func NewKafkaConsumer(cfg config.Kafka, packageEventsCh chan<- []byte, tgbotComm
 	saramaConf.Consumer.Offsets.Initial = sarama.OffsetOldest
 	log.Debug().Msg("NewKafkaConsumer(): sarama config ready")
 
-	cg, err := sarama.NewConsumerGroup(cfg.Brokers, cfg.GroupID, saramaConf)
+	var (
+		cg  sarama.ConsumerGroup
+		err error
+	)
+	for i := 0; i < cfg.MaxAttempts; i++ {
+		cg, err = sarama.NewConsumerGroup(cfg.Brokers, cfg.GroupID, saramaConf)
+
+		if err == nil {
+			break
+		}
+
+		log.Info().Err(err).Msgf("NewKafkaConsumer: failed attempt %d/%d to connect to kafka", i+1, cfg.MaxAttempts)
+		time.Sleep(10 * time.Second)
+	}
 	if err != nil {
 		return nil, err
 	}
+
 	log.Debug().Msg("NewKafkaConsumer(): consumerGroup created")
 
 	consumerHandler := &consumerHandler{
@@ -94,11 +109,19 @@ func (kc *KafkaConsumer) Start(ctx context.Context) error {
 
 func (kc *KafkaConsumer) subscribe(ctx context.Context) error {
 	go func() {
-		// for {
-		if err := kc.consumerGroup.Consume(ctx, kc.topics, kc.consumerHandler); err != nil {
-			log.Error().Err(err).Msg("kc.consumerGroup.Consume")
+		for {
+			select {
+			case <-ctx.Done():
+				return
+
+			default:
+				log.Info().Msg("KafkaConsumer: consuming...")
+				if err := kc.consumerGroup.Consume(ctx, kc.topics, kc.consumerHandler); err != nil {
+					log.Error().Err(err).Msg("kc.consumerGroup.Consume")
+				}
+				time.Sleep(time.Second)
+			}
 		}
-		// }
 	}()
 	return nil
 }

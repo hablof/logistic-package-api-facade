@@ -18,10 +18,11 @@ func GetConfigInstance() Kafka {
 }
 
 type Kafka struct {
-	Capacity uint64   `yaml:"capacity"`
-	GroupID  string   `yaml:"groupId"`
-	Topics   []string `yaml:"topics"`
-	Brokers  []string `yaml:"brokers"`
+	MaxAttempts int      `yaml:"attempts"`
+	Capacity    uint64   `yaml:"capacity"`
+	GroupID     string   `yaml:"groupId"`
+	Topics      []string `yaml:"topics"`
+	Brokers     []string `yaml:"brokers"`
 }
 
 func ReadConfigYML(filePath string) error {

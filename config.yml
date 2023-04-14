@@ -1,4 +1,5 @@
 capacity: 512
+attempts: 5
 groupId: "logistic-package-api"
 brokers:
   # - "kafka:9092"
