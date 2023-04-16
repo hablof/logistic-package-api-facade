@@ -7,11 +7,11 @@
   - "omp-tgbot-commands"
   - "omp-tgbot-cache-events"
 
-и выводит сообщения в `stdout` в читаемом виде.
+и выводит сообщения в `stdout` в человекочитаемом виде.
 
 ### Топик "omp-package-events"
 
-Сообщения в топике "omp-package-events" сериализованы в protobuf, описанном в субмодуле `pkg/kafka-proto` основного [репозитория](https://github.com/hablof/logistic-package-api). Сообщения десериализуются в объект и сериализуются с помощью `json.MarshalIndent` и выводятся в `stdout`.
+Сообщения в топике "omp-package-events" сериализованы в protobuf, описанном в субмодуле `pkg/kafka-proto` основного [репозитория](https://github.com/hablof/logistic-package-api). Сообщения десериализуются в объект и снова сериализуются с помощью `json.MarshalIndent` и выводятся в `stdout`.
 
 ### Топики "omp-tgbot-commands" и "omp-tgbot-cache-events"
 
